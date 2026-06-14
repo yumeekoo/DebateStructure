@@ -1,0 +1,11 @@
+flowchart TD
+    V1["VISIT V1<br/>Lượt khám BN A"]
+    C1["TX_COURSE C1<br/>Châm cứu 10 buổi"]
+    S7["TX_SESSION S7<br/>★ Buổi 7"]
+    RS["ROOM_SESSION RS<br/>Phòng châm cứu — 20/06"]
+
+    V1 -->|"CLINICAL · order = 3"| C1
+    C1 -->|"CLINICAL · order = 7"| S7
+    RS -->|"RESOURCE · order = 2"| S7
+
+    style S7 fill:#fff3cd,stroke:#c8950a,stroke-width:3px

@@ -1,0 +1,50 @@
+Tóm tắt từ tôi:
+Bài toán: gi anh Dũng thấy phần mềm tuyệt vời kia ko còn tuyệt vời nữa. Nên sẽ ko reverse cái app tuyệt vời kia nữa. Vậy bây h sẽ bắt đầu từ đâu?
+1. Mục tiêu: tập trung vào nghiệp vụ tiếp nhận bệnh, khám bệnh, điều trị, cận lâm sàn. (Tạm thời bỏ qua nghiệp vụ thanh toán, thuốc,…)
+2. ⁠idea mới của anh Dũng: ok, chúng ta sẽ đưa tất cả thực thể về dạng: worklist, under worklist là tasklist, undet tasklist là subtasklist
+3. ⁠ví dụ 1: mỗi 1 visit (lượt khám) là worklist. Khám ở phòng nội là 1 tasklist.
+4. ⁠ví dụ 2: phiên làm việc của phòng khám nội là worklist. Trong worklist này sẽ có tasklist là khám cho thằng A, khám cho thằng B.
+5. Mọi nghiệp vụ chúng ta sẽ đưa về dạng worklist tasklist subtasklist. Vậy, câu hỏi: có tồn tại case nghiệp vụ nào mà cái kiến trúc này ko giải quyết đc ko? Hãy debate…
+6. ⁠câu hỏi em đang concern: thiết kế db cho kiểu kiến trúc này sẽ ntn. Table j, bao nhiêu cột, cột j lưu j, có đảm bảo Các Dạng chuẩn Cơ bản (1NF, 2NF, 3NF) ko?? Em muốn AI dựa vào cái idea này và thiết kế db, để em có cái nhìn cụ thể hơn về cách các table được define và how it works in UI.
+
+
+scripts từ granula trong cuộc họp:
+### Kiến trúc tổng quan hệ thống phòng khám
+
+- Hệ thống quản lý quy trình khám bệnh, xoay quanh khái niệm **bộ list** — danh sách công việc cho một lượt khám của khách hàng
+- Các entity cốt lõi: Bệnh nhân, Bác sĩ, Khoa, Phòng, Dịch vụ, worklist, tasklist (task), subtask (sub-task)
+- Đơn vị tổ chức nên là **Khoa** (không phải từng phòng riêng lẻ) — mỗi khoa có nhiều phòng
+- Cần xây **tool tạo phòng** để chuẩn hóa: đặt tên phòng, gán chức năng, gắn với khoa tương ứng
+
+### Cấu trúc worklist & Task
+
+- Worklist = workflow của một khách hàng trong một lượt khám
+  - Chứa danh sách các tác (task), mỗi tác gắn với một dịch vụ
+  - Tác có thứ tự tham khảo, nhưng **không bắt buộc chạy theo thứ tự**
+  - Một số tác có ràng buộc phụ thuộc (ví dụ: phải có kết quả xét nghiệm trước khi làm tác tiếp theo)
+- Sức tác (sub-task) = các bước nhỏ trong một tác
+  - Ví dụ: siêu âm → mở máy → chụp hình → ghi nhận kết quả → import hình
+- Dịch vụ = tên của tác (ví dụ: xét nghiệm máu, siêu âm, khám nội, chụp X-quang)
+
+### Quy trình bệnh nhân & Các trường hợp đặc biệt
+
+- Luồng cơ bản: Tiếp nhận → Phân phòng → Khám → Chỉ định xét nghiệm/dịch vụ → Nhận kết quả → Kê đơn → Thanh toán
+- Cấp cứu: luồng riêng, bỏ qua bước đặt lịch thông thường, tạo bệnh nhân trực tiếp
+- Hẹn tái khám: là một loại tác trong clip, có attribute ngày hẹn, lý do, bác sĩ phụ trách
+  - Dùng khi kết quả xét nghiệm chưa có trong ngày, hoặc cần đổi ca bác sĩ
+- Đơn thuốc: sức tác của bác sĩ → tạo tác cho nhà thuốc → khách hàng nhận thuốc và ký xác nhận
+- Thanh toán: xử lý **bất đồng bộ**, tách riêng khỏi luồng lâm sàng chính
+
+### Các quyết định thiết kế quan trọng
+
+- Mỗi đối tượng (bệnh nhân, bác sĩ, phòng) có mục đích riêng — hệ thống phục vụ tất cả các đối tượng này
+- Phòng không nên hardcode theo tên — dùng tool tạo phòng để linh hoạt mở rộng
+- Quyền chỉ định dịch vụ thuộc về bác sĩ; AI chỉ đóng vai trò **gợi ý (recommend)**, không thay thế quyết định của bác sĩ
+- Dữ liệu sinh hiệu, kết quả xét nghiệm, hình ảnh cần được đồng bộ real-time giữa các phòng
+
+### Bước tiếp theo
+
+- Dựng các entity cơ bản trong DB: Bệnh nhân, Bác sĩ, Khoa, Phòng, Dịch vụ
+- Xây dựng cấu trúc Bộ clip → Task list → Sub-task
+- Định nghĩa rõ ràng: mục đích (clip), tác, sức tác — thống nhất thuật ngữ trong team
+- Nghĩ thêm các edge case: bệnh nhân không quay lại trong ngày, thay bác sĩ giữa ca, kết quả xét nghiệm trả sau

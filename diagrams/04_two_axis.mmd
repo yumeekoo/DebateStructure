@@ -1,0 +1,13 @@
+flowchart LR
+    subgraph clinical["TRỤC LÂM SÀNG — màn hình Bác sĩ (theo bệnh nhân)"]
+        direction TB
+        V["Visit · BN A"] --> E1["Khám Nội"]
+        V --> C["Liệu trình châm cứu"]
+        C --> B7["Buổi 7"]
+    end
+    subgraph resource["TRỤC NGUỒN LỰC — màn hình Phòng (theo ca)"]
+        direction TB
+        RS["Phiên phòng châm cứu · 20/06"] --> X1["Ca 1 · BN B"]
+        RS --> B7r["Ca 2 · Buổi 7 (BN A)"]
+    end
+    B7 -. "CÙNG 1 node trong DB" .- B7r
