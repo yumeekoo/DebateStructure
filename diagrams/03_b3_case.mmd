@@ -1,11 +1,18 @@
 flowchart TD
-    V1["VISIT V1<br/>Lượt khám BN A"]
-    C1["TX_COURSE C1<br/>Châm cứu 10 buổi"]
-    S7["TX_SESSION S7<br/>★ Buổi 7"]
-    RS["ROOM_SESSION RS<br/>Phòng châm cứu — 20/06"]
-
-    V1 -->|"CLINICAL · order = 3"| C1
-    C1 -->|"CLINICAL · order = 7"| S7
-    RS -->|"RESOURCE · order = 2"| S7
-
+    subgraph facade["WORKLIST KHÁCH (visibility=CUSTOMER · chỉ thấy mặt tiền)"]
+        V1["VISIT V1<br/>Lượt khám BN A"]
+        CK["Task khách CK<br/>'Châm cứu — nhận KQ'"]
+        V1 -->|"VISIT_ITEM · order=3"| CK
+    end
+    subgraph internal["WORKLIST NỘI BỘ (visibility=INTERNAL · giấu khách)"]
+        C1["TX_COURSE C1<br/>Liệu trình 10 buổi"]
+        RS["ROOM_SESSION RS<br/>Phòng châm cứu 20/06"]
+        S7["TX_SESSION S7 · ★ Buổi 7"]
+        C1 -->|"COURSE · order=7"| S7
+        RS -->|"RESOURCE · order=2"| S7
+        S7 --> sub1["subtask: chuẩn bị"]
+        S7 --> sub2["subtask: châm + theo dõi"]
+    end
+    CK -. "task_bridge → đẩy KQ" .-> C1
+    style CK fill:#d4edda,stroke:#28a745,stroke-width:2px
     style S7 fill:#fff3cd,stroke:#c8950a,stroke-width:3px

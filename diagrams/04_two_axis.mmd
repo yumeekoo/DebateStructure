@@ -1,13 +1,13 @@
 flowchart LR
-    subgraph clinical["TRỤC LÂM SÀNG — màn hình Bác sĩ (theo bệnh nhân)"]
+    subgraph facade["WORKLIST KHÁCH"]
         direction TB
-        V["Visit · BN A"] --> E1["Khám Nội"]
-        V --> C["Liệu trình châm cứu"]
-        C --> B7["Buổi 7"]
+        VK["Visit · BN A"] --> TK["1 task khách:<br/>'Xét nghiệm máu — nhận KQ'"]
     end
-    subgraph resource["TRỤC NGUỒN LỰC — màn hình Phòng (theo ca)"]
+    subgraph internal["WORKLIST NỘI BỘ (nhiều phòng)"]
         direction TB
-        RS["Phiên phòng châm cứu · 20/06"] --> X1["Ca 1 · BN B"]
-        RS --> B7r["Ca 2 · Buổi 7 (BN A)"]
+        I1["Lấy mẫu<br/>(phòng lấy máu)"] --> I2["Chạy máy<br/>(lab)"] --> I3["Duyệt KQ<br/>(BS lab)"]
     end
-    B7 -. "CÙNG 1 node trong DB" .- B7r
+    TK -. "task_bridge" .-> I1
+    TK -. "task_bridge" .-> I2
+    TK -. "task_bridge" .-> I3
+    style TK fill:#d4edda,stroke:#28a745,stroke-width:2px

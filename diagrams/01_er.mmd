@@ -10,6 +10,8 @@ erDiagram
     node       ||--o{ node_link         : "là con (child_id)"
     node       ||--o{ node_dependency   : "tiên quyết (from)"
     node       ||--o{ node_dependency   : "bị chặn (to)"
+    node       ||--o{ task_bridge       : "task khách (customer)"
+    node       ||--o{ task_bridge       : "task nội bộ (internal)"
 
     node       ||--o| node_visit        : "extends"
     node       ||--o| node_room_session : "extends"
@@ -34,6 +36,7 @@ erDiagram
         uuid id PK
         text node_type FK
         uuid branch_id FK
+        text visibility
         text status
         uuid completed_by FK
         timestamptz completed_at
@@ -51,6 +54,12 @@ erDiagram
         uuid from_node_id FK
         uuid to_node_id FK
         text dep_type
+    }
+    task_bridge {
+        uuid id PK
+        uuid customer_node_id FK
+        uuid internal_node_id FK
+        boolean is_result_source
     }
     node_visit {
         uuid node_id PK

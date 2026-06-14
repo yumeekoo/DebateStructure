@@ -1,11 +1,13 @@
 flowchart TD
     NT["node_type<br/>(cấu hình loại)"] -->|phân loại| N
-    subgraph core["TRÁI TIM — đồ thị công việc"]
-        N[("node<br/>đơn vị công việc<br/>(worklist=task=subtask)")]
+    subgraph core["TRÁI TIM — đồ thị công việc + cầu facade"]
+        N[("node<br/>đơn vị công việc<br/>visibility: CUSTOMER/INTERNAL")]
         L["node_link<br/>cạnh CHA→CON (M:N)<br/>order_index · context_status"]
         D["node_dependency<br/>cạnh PHỤ THUỘC task→task"]
+        BR["task_bridge<br/>cầu KHÁCH ↔ NỘI BỘ<br/>(1:1 hoặc 1:N)"]
     end
     N -->|parent_id| L
     N -->|child_id| L
     N -->|from / to| D
+    N -->|customer / internal| BR
     N -.->|"extends (1-1)"| EXT["7 bảng node_*<br/>visit · room_session · exam<br/>lab_order · lab_result<br/>tx_course · tx_session"]
