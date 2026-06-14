@@ -1,0 +1,31 @@
+flowchart TD
+    subgraph KHACH["WORKLIST KHÁCH (CUSTOMER · BN chỉ thấy phần này)"]
+        V1["VISIT V1<br/>Lượt khám BN Trần Văn B"]
+        CK1["CK1 · Khám TMH"]
+        CK2["CK2 · Xét nghiệm máu"]
+        CK3["CK3 · Nhận đơn thuốc"]
+        CK4["CK4 · Lịch tái khám"]
+        V1 -->|order=1| CK1
+        V1 -->|order=2| CK2
+        V1 -->|order=3| CK3
+        V1 -->|order=4| CK4
+    end
+    subgraph NOIBO["WORKLIST NỘI BỘ (INTERNAL · giấu khách)"]
+        IN1["IN1 EXAM<br/>Khám TMH — BS Minh"]
+        IN2["IN2 LAB_ORDER<br/>Lấy mẫu — phòng lấy máu"]
+        IN3["IN3 LAB_RESULT<br/>Chạy + duyệt CBC — lab"]
+        IN4["IN4 PRESCRIPTION<br/>Kê đơn — BS Minh"]
+        IN5["IN5 FOLLOWUP<br/>Hẹn tái khám"]
+        IN1 -->|"depends: khám xong mới chỉ định"| IN2
+        IN2 -->|"depends: lấy mẫu xong mới chạy máy"| IN3
+        IN3 -->|"depends: có KQ mới kê đơn"| IN4
+    end
+    CK1 -. bridge .-> IN1
+    CK2 -. "bridge 1:N" .-> IN2
+    CK2 -. "bridge 1:N" .-> IN3
+    CK3 -. bridge .-> IN4
+    CK4 -. bridge .-> IN5
+    style CK1 fill:#d4edda,stroke:#28a745
+    style CK2 fill:#d4edda,stroke:#28a745
+    style CK3 fill:#d4edda,stroke:#28a745
+    style CK4 fill:#d4edda,stroke:#28a745

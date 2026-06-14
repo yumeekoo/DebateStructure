@@ -1,0 +1,35 @@
+Dạ anh Dũng, em đọc kỹ lại rồi. Tóm cho anh phần KHÓ + hướng giải + chỗ em đã sửa theo ý anh:
+
+🔴 KHÓ KHĂN LỚN NHẤT
+Mô hình Worklist → Task → Subtask mình gọi là "cây 3 tầng", nhưng nghiệp vụ phòng khám thực tế nó KHÔNG phải cây — nó là đồ thị. Nhắc lại: "cây" nghĩa là mỗi việc chỉ treo dưới ĐÚNG 1 việc cha, và quan hệ duy nhất là trên-bọc-dưới. 3 chỗ thực tế phá vỡ đúng 2 luật đó:
+
+1) 1 task nhiều cha.
+Việc "khám BN A ở phòng Nội" cùng lúc nằm trong 2 danh sách: danh sách việc của lượt khám BN A (nhìn theo bệnh nhân), VÀ hàng đợi của phòng Nội hôm đó (nhìn theo phòng). Mà cây bắt mỗi việc chỉ được có 1 cha. Việc này có 2 cha một lúc → không nhét vào cây được. 
+
+
+3) Liệu trình N buổi — phá con số "3".
+Mô hình chốt cứng đúng 3 tầng. Nhưng châm cứu một liệu trình thì: lượt khám (tầng 1) → liệu trình 10 buổi (tầng 2) → buổi thứ 7 (tầng 3) → các bước trong buổi: chuẩn bị → châm → theo dõi (tầng 4). Tự nhiên đã 4 tầng. Giống quy định "thư mục chỉ cho lồng tối đa 3 cấp" — nghe gọn, nhưng gặp hồ sơ cần 4-5 cấp là kẹt cứng. Khám thường chỉ cần 2 tầng, gói khám tổng quát cần 4 — số tầng phải TÙY việc, chốt trước con số là tự trói. Chưa kể 10 buổi rải 10 ngày = 10 lần khách tới khác nhau, nên 1 liệu trình lại dính tới nhiều lượt khám → quay về đúng vụ "nhiều cha" ở mục 1.
+
+→ Nếu code theo hình dung "cây 3 tầng", tới giữa dự án gặp mấy case này là phải đập lại tầng dữ liệu.
+
+
+🟢 HƯỚNG GIẢI (em chốt )
+Vẫn giữ nguyên tinh thần "việc-trong-việc" của anh, chỉ gọi đúng tên là work-graph:
+- 1 bảng node tự đệ quy (độ sâu tùy biến, không khóa cứng 3 tầng)
+- node_link: cha-con nhiều-nhiều, THỨ TỰ nằm trên cạnh
+- dependency: phụ thuộc task tách riêng
+Ý tưởng của anh không sai — chỉ đổi từ "cây cứng" sang "đồ thị" là chạy được mọi case.
+
+✅ FEEDBACK CỦA ANH — ĐÃ ĐƯA VÀO STRUCTURE MỚI
+- Vụ "1 task ánh xạ 1 task" (anh thích option 2): em làm bằng bảng cầu task_bridge. Worklist khách và worklist phòng là 2 cây tách biệt, nối qua cầu. Khách chỉ thấy "vào phòng + nhận KQ"; subtask + mấy bước nội bộ giấu sạch.
+- Em thêm cột visibility (CUSTOMER/INTERNAL) + chặn bằng RLS ngay tầng DB, không để ở app (app dễ rò). Khách không cách nào nhìn vào phía nội bộ.
+- Bonus: cách này vá luôn 1 lỗi em từng lo (trạng thái khác nhau theo góc nhìn) — giờ là 2 record riêng nên hết lo.
+
+⚠️ NÓI THẲNG CÁI GIÁ
+Đổi sang 2 task + cầu thì phải SYNC trạng thái/KQ từ nội bộ ra mặt tiền. Sync sai = khách thấy sai. Em ghi nhận đây là chỗ phải làm kỹ, không giấu.
+
+❓ 2 CÂU EM CẦN ANH CHỐT ĐỂ KHÓA SCHEMA
+(a) Cầu khách↔phòng có case 1:N không? VD "xét nghiệm máu" = 1 task của khách nhưng nội bộ là lấy mẫu → chạy máy → duyệt (3 phòng). Em đã làm sẵn dạng bảng nối nên 1:N vẫn ok, chỉ cần anh xác nhận có gặp case này không.
+(b) "Liệu trình 10 buổi" để KHÁCH tự theo dõi 6/10, hay chỉ PHÒNG theo dõi? → quyết định worklist khách nông hay sâu.
+
+Em update hết vào file design + có sơ đồ rồi. Anh rảnh xem rồi ping em nha.

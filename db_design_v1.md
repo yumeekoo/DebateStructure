@@ -452,7 +452,115 @@ CREATE TABLE vital_measurement (
 
 ---
 
-## 6. ★ Đi qua case B3 (liệu trình 10 buổi) bằng DỮ LIỆU THẬT
+## 6. Mô phỏng luồng dữ liệu — Happy case end-to-end
+
+> Đi theo MỘT lượt khám bình thường từ đầu tới cuối, cho thấy **từng bước ghi gì xuống bảng nào**. Đọc mục này trước rồi xuống mục 6B (case khó) sẽ dễ thấm.
+
+**Nhân vật (master data có sẵn):** BN Trần Văn B (`P_B`) · Lễ tân Hoa · BS Minh (phòng khám TMH `R_ENT`) · KTV Lan (phòng lấy máu `R_DRAW` + lab `R_LAB`) · dịch vụ `SV_ENT` (khám TMH), `SV_CBC` (công thức máu).
+
+**Quy ước:** node KHÁCH = `CK*`, node NỘI BỘ = `IN*`. **＋** = INSERT, **✎** = UPDATE.
+
+### Bước 1 — Tiếp nhận (Lễ tân Hoa)
+- ＋ `node` **V1** (VISIT, **CUSTOMER**, IN_PROGRESS) · ＋ `node_visit`(V1, patient=P_B, KHONG_BH)
+- ＋ `node` **CK1** (CUSTOMER, "Khám TMH", PENDING) · ＋ `node_link`(V1→CK1, VISIT_ITEM, order=1)
+- ＋ `node` **IN1** (INTERNAL, EXAM, PENDING) · ＋ `node_link`(RS_ENT→IN1, RESOURCE, order=3) ← vào hàng đợi phòng TMH
+- ＋ `task_bridge`(CK1 ↔ IN1, is_result_source=true)
+
+→ Khách mở app thấy đúng 1 dòng *"Khám TMH — đang chờ"*. Không thấy IN1, không thấy phòng nào.
+
+### Bước 2 — Khám TMH (BS Minh)
+- ✎ IN1.status: PENDING → IN_PROGRESS → COMPLETED
+- ＋ `node_exam`(IN1, service=SV_ENT, reason="đau họng, ù tai 3 ngày") · ＋ `diagnosis`(IN1, icd="J31", is_primary=true)
+- Bác sĩ chỉ định XN máu → đẻ nhánh xét nghiệm:
+  - ＋ `node` **CK2** (CUSTOMER, "Xét nghiệm máu — nhận KQ") · ＋ `node_link`(V1→CK2, order=2)
+  - ＋ `node` **IN2** (INTERNAL, LAB_ORDER, PENDING) dưới RS_DRAW · ＋ `node` **IN3** (INTERNAL, LAB_RESULT, PENDING) dưới RS_LAB
+  - ＋ `node_dependency`(IN1→IN2) · ＋ `node_dependency`(IN2→IN3) ← lấy mẫu xong mới chạy máy
+  - ＋ `task_bridge`(CK2 ↔ IN2) · ＋ `task_bridge`(CK2 ↔ IN3, is_result_source=true) ← **1 task khách, 2 task nội bộ = 1:N**
+- sync qua cầu: ✎ CK1.status → COMPLETED (khách thấy "đã khám xong")
+
+### Bước 3 — Lấy mẫu + chạy xét nghiệm (KTV Lan)
+- ✎ IN2.status → COMPLETED · ＋ `node_lab_order`(IN2, sample_time, sample_quality="Đạt")
+- dependency IN2→IN3 thỏa → IN3 mở khóa
+- ✎ IN3.status → IN_PROGRESS · ＋ `node_lab_result`(IN3, performed_by=Lan, approved_by, approved_at)
+- ＋ `lab_result_line` × N: WBC 12.5 (cao ⚠) · RBC 4.8 · HGB 140... — **mỗi chỉ số 1 dòng (1NF)**
+- ✎ IN3.status → COMPLETED
+- sync qua cầu (nguồn KQ = IN3): ✎ CK2.status → COMPLETED (khách nhận "đã có kết quả")
+
+### Bước 4 — Kê đơn (BS Minh)
+- ＋ `node_dependency`(IN3→IN4) ← **có KQ mới được kê đơn**
+- ＋ `node` **IN4** (INTERNAL, PRESCRIPTION, PENDING) dưới RS_ENT — IN3 đã COMPLETED nên không bị chặn
+- ＋ `node` **CK3** (CUSTOMER, "Nhận đơn thuốc") · ＋ `node_link`(V1→CK3, order=3) · ＋ `task_bridge`(CK3 ↔ IN4)
+- ✎ IN4.status → COMPLETED (＋ bảng `node_prescription` — thuộc module Thuốc, pha sau; xem mục 10) · sync: ✎ CK3 → COMPLETED
+
+### Bước 5 — Hẹn tái khám
+- ＋ `node` **IN5** (INTERNAL, FOLLOWUP) dưới RS_ENT · ＋ `node_followup`(IN5, hẹn sau 14 ngày) *(extension followup — pha sau)*
+- ＋ `node` **CK4** (CUSTOMER, "Lịch tái khám") · ＋ `node_link`(V1→CK4, order=4) · ＋ `task_bridge`(CK4 ↔ IN5)
+
+### Bước 6 — Đóng lượt khám
+- Tất cả CK1..CK4 = COMPLETED → ✎ V1.status → COMPLETED
+
+### Ảnh chụp cuối — bảng `node`
+| id | visibility | node_type | title | status |
+|---|---|---|---|---|
+| V1 | CUSTOMER | VISIT | Lượt khám BN Trần Văn B | COMPLETED |
+| CK1 | CUSTOMER | EXAM | Khám TMH | COMPLETED |
+| CK2 | CUSTOMER | LAB_ORDER | Xét nghiệm máu — nhận KQ | COMPLETED |
+| CK3 | CUSTOMER | PRESCRIPTION | Nhận đơn thuốc | COMPLETED |
+| CK4 | CUSTOMER | FOLLOWUP | Lịch tái khám | COMPLETED |
+| IN1 | INTERNAL | EXAM | Khám TMH (BS Minh) | COMPLETED |
+| IN2 | INTERNAL | LAB_ORDER | Lấy mẫu máu | COMPLETED |
+| IN3 | INTERNAL | LAB_RESULT | Chạy & duyệt CBC | COMPLETED |
+| IN4 | INTERNAL | PRESCRIPTION | Kê đơn | COMPLETED |
+| IN5 | INTERNAL | FOLLOWUP | Hẹn tái khám | COMPLETED |
+
+→ 5 dòng CUSTOMER là **tất cả** những gì khách thấy. 5 dòng INTERNAL + room session + subtask + dòng KQ chi tiết: khách **không** chạm tới.
+
+### ⊕ Sơ đồ luồng (diagram 5)
+
+![Happy case end-to-end](diagrams/05_happy_case.png)
+
+```mermaid
+flowchart TD
+    subgraph KHACH["WORKLIST KHÁCH (CUSTOMER · BN chỉ thấy phần này)"]
+        V1["VISIT V1<br/>Lượt khám BN Trần Văn B"]
+        CK1["CK1 · Khám TMH"]
+        CK2["CK2 · Xét nghiệm máu"]
+        CK3["CK3 · Nhận đơn thuốc"]
+        CK4["CK4 · Lịch tái khám"]
+        V1 -->|order=1| CK1
+        V1 -->|order=2| CK2
+        V1 -->|order=3| CK3
+        V1 -->|order=4| CK4
+    end
+    subgraph NOIBO["WORKLIST NỘI BỘ (INTERNAL · giấu khách)"]
+        IN1["IN1 EXAM<br/>Khám TMH — BS Minh"]
+        IN2["IN2 LAB_ORDER<br/>Lấy mẫu — phòng lấy máu"]
+        IN3["IN3 LAB_RESULT<br/>Chạy + duyệt CBC — lab"]
+        IN4["IN4 PRESCRIPTION<br/>Kê đơn — BS Minh"]
+        IN5["IN5 FOLLOWUP<br/>Hẹn tái khám"]
+        IN1 -->|"depends: khám xong mới chỉ định"| IN2
+        IN2 -->|"depends: lấy mẫu xong mới chạy máy"| IN3
+        IN3 -->|"depends: có KQ mới kê đơn"| IN4
+    end
+    CK1 -. bridge .-> IN1
+    CK2 -. "bridge 1:N" .-> IN2
+    CK2 -. "bridge 1:N" .-> IN3
+    CK3 -. bridge .-> IN4
+    CK4 -. bridge .-> IN5
+    style CK1 fill:#d4edda,stroke:#28a745
+    style CK2 fill:#d4edda,stroke:#28a745
+    style CK3 fill:#d4edda,stroke:#28a745
+    style CK4 fill:#d4edda,stroke:#28a745
+```
+
+> **3 điều mục này chứng minh:**
+> 1. **Che giấu:** khách chỉ thấy 5 dòng `CK*` mờ; toàn bộ `IN*`, room session, subtask, KQ chi tiết bị giấu (`visibility` + RLS).
+> 2. **Bridge 1:N:** "Xét nghiệm máu" = CK2 → (IN2 + IN3). Đúng case (a) đang chờ anh D chốt — và vì cầu là bảng nối nên 1:N chạy được ngay.
+> 3. **Thứ tự thật bằng `node_dependency`**, không phải bằng cấp bậc cây: lấy mẫu → chạy máy → có KQ → kê đơn là chuỗi mũi tên ngang, đúng cái mà "cây" không vẽ được (khó khăn #2).
+
+---
+
+## 6B. ★ Trường hợp khó — case B3 (liệu trình 10 buổi)
 
 Bệnh nhân A, châm cứu 10 buổi, đến 10 ngày khác nhau. Mô hình facade: **mặt tiền cho khách + đồ thị thật giấu bên trong + cầu nối**.
 
