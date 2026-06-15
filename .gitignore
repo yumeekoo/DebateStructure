@@ -1,0 +1,3 @@
+# scratch build deps for rendering data-ER diagram (giữ render.mjs + .dot, bỏ deps)
+diagrams/.build/node_modules/
+diagrams/.build/package-lock.json

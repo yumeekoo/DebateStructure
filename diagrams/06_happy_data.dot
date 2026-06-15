@@ -1,0 +1,127 @@
+digraph happy_case {
+  rankdir=LR;
+  graph [fontname="Arial", nodesep=0.45, ranksep=1.1,
+         label="Happy case — DỮ LIỆU nằm ở bảng nào (BN Trần Văn B). Xanh = CUSTOMER (khách thấy) · Tím = INTERNAL (giấu khách)",
+         labelloc="t", fontsize=16];
+  node [shape=plaintext, fontname="Arial", fontsize=10];
+  edge [fontname="Arial", fontsize=9, color="#666666", arrowhead=vee];
+
+  node_tbl [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
+      <tr><td colspan="4" bgcolor="#333333"><font color="white"><b>node</b></font></td></tr>
+      <tr><td bgcolor="#dddddd"><b>id</b></td><td bgcolor="#dddddd"><b>type</b></td><td bgcolor="#dddddd"><b>visibility</b></td><td bgcolor="#dddddd"><b>status</b></td></tr>
+      <tr><td bgcolor="#d4edda">V1</td><td bgcolor="#d4edda">VISIT</td><td bgcolor="#d4edda">CUSTOMER</td><td bgcolor="#d4edda">DONE</td></tr>
+      <tr><td bgcolor="#d4edda">CK1</td><td bgcolor="#d4edda">EXAM</td><td bgcolor="#d4edda">CUSTOMER</td><td bgcolor="#d4edda">DONE</td></tr>
+      <tr><td bgcolor="#d4edda">CK2</td><td bgcolor="#d4edda">LAB_ORDER</td><td bgcolor="#d4edda">CUSTOMER</td><td bgcolor="#d4edda">DONE</td></tr>
+      <tr><td bgcolor="#d4edda">CK3</td><td bgcolor="#d4edda">PRESCRIPTION</td><td bgcolor="#d4edda">CUSTOMER</td><td bgcolor="#d4edda">DONE</td></tr>
+      <tr><td bgcolor="#d4edda">CK4</td><td bgcolor="#d4edda">FOLLOWUP</td><td bgcolor="#d4edda">CUSTOMER</td><td bgcolor="#d4edda">DONE</td></tr>
+      <tr><td bgcolor="#e7e0f3">IN1</td><td bgcolor="#e7e0f3">EXAM</td><td bgcolor="#e7e0f3">INTERNAL</td><td bgcolor="#e7e0f3">DONE</td></tr>
+      <tr><td bgcolor="#e7e0f3">IN2</td><td bgcolor="#e7e0f3">LAB_ORDER</td><td bgcolor="#e7e0f3">INTERNAL</td><td bgcolor="#e7e0f3">DONE</td></tr>
+      <tr><td bgcolor="#e7e0f3">IN3</td><td bgcolor="#e7e0f3">LAB_RESULT</td><td bgcolor="#e7e0f3">INTERNAL</td><td bgcolor="#e7e0f3">DONE</td></tr>
+      <tr><td bgcolor="#e7e0f3">IN4</td><td bgcolor="#e7e0f3">PRESCRIPTION</td><td bgcolor="#e7e0f3">INTERNAL</td><td bgcolor="#e7e0f3">DONE</td></tr>
+      <tr><td bgcolor="#e7e0f3">IN5</td><td bgcolor="#e7e0f3">FOLLOWUP</td><td bgcolor="#e7e0f3">INTERNAL</td><td bgcolor="#e7e0f3">DONE</td></tr>
+      <tr><td bgcolor="#e7e0f3">RS_ENT</td><td bgcolor="#e7e0f3">ROOM_SESSION</td><td bgcolor="#e7e0f3">INTERNAL</td><td bgcolor="#e7e0f3">OPEN</td></tr>
+      <tr><td bgcolor="#e7e0f3">RS_DRAW</td><td bgcolor="#e7e0f3">ROOM_SESSION</td><td bgcolor="#e7e0f3">INTERNAL</td><td bgcolor="#e7e0f3">OPEN</td></tr>
+      <tr><td bgcolor="#e7e0f3">RS_LAB</td><td bgcolor="#e7e0f3">ROOM_SESSION</td><td bgcolor="#e7e0f3">INTERNAL</td><td bgcolor="#e7e0f3">OPEN</td></tr>
+    </table>
+  >];
+
+  node_link_tbl [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
+      <tr><td colspan="4" bgcolor="#1f6f3f"><font color="white"><b>node_link</b> (cha-con trong 1 worklist)</font></td></tr>
+      <tr><td bgcolor="#dddddd"><b>parent_id</b></td><td bgcolor="#dddddd"><b>child_id</b></td><td bgcolor="#dddddd"><b>link_role</b></td><td bgcolor="#dddddd"><b>order</b></td></tr>
+      <tr><td>V1</td><td>CK1</td><td>VISIT_ITEM</td><td>1</td></tr>
+      <tr><td>V1</td><td>CK2</td><td>VISIT_ITEM</td><td>2</td></tr>
+      <tr><td>V1</td><td>CK3</td><td>VISIT_ITEM</td><td>3</td></tr>
+      <tr><td>V1</td><td>CK4</td><td>VISIT_ITEM</td><td>4</td></tr>
+      <tr><td>RS_ENT</td><td>IN1</td><td>RESOURCE</td><td>3</td></tr>
+      <tr><td>RS_DRAW</td><td>IN2</td><td>RESOURCE</td><td>1</td></tr>
+      <tr><td>RS_LAB</td><td>IN3</td><td>RESOURCE</td><td>1</td></tr>
+      <tr><td>RS_ENT</td><td>IN4</td><td>RESOURCE</td><td>5</td></tr>
+      <tr><td>RS_ENT</td><td>IN5</td><td>RESOURCE</td><td>6</td></tr>
+    </table>
+  >];
+
+  bridge_tbl [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
+      <tr><td colspan="3" bgcolor="#b8860b"><font color="white"><b>task_bridge</b> (cầu facade)</font></td></tr>
+      <tr><td bgcolor="#dddddd"><b>customer_node_id</b></td><td bgcolor="#dddddd"><b>internal_node_id</b></td><td bgcolor="#dddddd"><b>result_src</b></td></tr>
+      <tr><td>CK1</td><td>IN1</td><td>Y</td></tr>
+      <tr><td bgcolor="#fff3cd">CK2</td><td bgcolor="#fff3cd">IN2</td><td bgcolor="#fff3cd">-</td></tr>
+      <tr><td bgcolor="#fff3cd">CK2</td><td bgcolor="#fff3cd">IN3</td><td bgcolor="#fff3cd">Y</td></tr>
+      <tr><td>CK3</td><td>IN4</td><td>Y</td></tr>
+      <tr><td>CK4</td><td>IN5</td><td>Y</td></tr>
+    </table>
+  >];
+
+  dep_tbl [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
+      <tr><td colspan="3" bgcolor="#7a4eab"><font color="white"><b>node_dependency</b> (thứ tự bắt buộc)</font></td></tr>
+      <tr><td bgcolor="#dddddd"><b>from_node_id</b></td><td bgcolor="#dddddd"><b>to_node_id</b></td><td bgcolor="#dddddd"><b>type</b></td></tr>
+      <tr><td>IN1</td><td>IN2</td><td>F2S</td></tr>
+      <tr><td>IN2</td><td>IN3</td><td>F2S</td></tr>
+      <tr><td>IN3</td><td>IN4</td><td>F2S</td></tr>
+    </table>
+  >];
+
+  visit_tbl [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
+      <tr><td colspan="3" bgcolor="#555555"><font color="white"><b>node_visit</b></font></td></tr>
+      <tr><td bgcolor="#dddddd"><b>node_id</b></td><td bgcolor="#dddddd"><b>patient_id</b></td><td bgcolor="#dddddd"><b>visit_object</b></td></tr>
+      <tr><td>V1</td><td>P_B (Trần Văn B)</td><td>KHONG_BH</td></tr>
+    </table>
+  >];
+
+  exam_tbl [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
+      <tr><td colspan="3" bgcolor="#555555"><font color="white"><b>node_exam</b></font></td></tr>
+      <tr><td bgcolor="#dddddd"><b>node_id</b></td><td bgcolor="#dddddd"><b>service_id</b></td><td bgcolor="#dddddd"><b>reason</b></td></tr>
+      <tr><td>IN1</td><td>SV_ENT</td><td>đau họng, ù tai</td></tr>
+    </table>
+  >];
+
+  diag_tbl [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
+      <tr><td colspan="4" bgcolor="#555555"><font color="white"><b>diagnosis</b></font></td></tr>
+      <tr><td bgcolor="#dddddd"><b>id</b></td><td bgcolor="#dddddd"><b>exam_node_id</b></td><td bgcolor="#dddddd"><b>icd</b></td><td bgcolor="#dddddd"><b>primary</b></td></tr>
+      <tr><td>d1</td><td>IN1</td><td>J31</td><td>Y</td></tr>
+    </table>
+  >];
+
+  laborder_tbl [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
+      <tr><td colspan="3" bgcolor="#555555"><font color="white"><b>node_lab_order</b></font></td></tr>
+      <tr><td bgcolor="#dddddd"><b>node_id</b></td><td bgcolor="#dddddd"><b>service_id</b></td><td bgcolor="#dddddd"><b>sample_quality</b></td></tr>
+      <tr><td>IN2</td><td>SV_CBC</td><td>Đạt</td></tr>
+    </table>
+  >];
+
+  labresult_tbl [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
+      <tr><td colspan="3" bgcolor="#555555"><font color="white"><b>node_lab_result</b></font></td></tr>
+      <tr><td bgcolor="#dddddd"><b>node_id</b></td><td bgcolor="#dddddd"><b>performed_by</b></td><td bgcolor="#dddddd"><b>approved_by</b></td></tr>
+      <tr><td>IN3</td><td>KTV Lan</td><td>BS lab</td></tr>
+    </table>
+  >];
+
+  labline_tbl [label=<
+    <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
+      <tr><td colspan="5" bgcolor="#555555"><font color="white"><b>lab_result_line</b></font></td></tr>
+      <tr><td bgcolor="#dddddd"><b>id</b></td><td bgcolor="#dddddd"><b>result_node_id</b></td><td bgcolor="#dddddd"><b>analyte</b></td><td bgcolor="#dddddd"><b>value</b></td><td bgcolor="#dddddd"><b>abnormal</b></td></tr>
+      <tr><td>l1</td><td>IN3</td><td>WBC</td><td>12.5</td><td>CAO</td></tr>
+      <tr><td>l2</td><td>IN3</td><td>RBC</td><td>4.8</td><td>-</td></tr>
+      <tr><td>l3</td><td>IN3</td><td>HGB</td><td>140</td><td>-</td></tr>
+    </table>
+  >];
+
+  // FK edges (bảng con -> bảng được tham chiếu)
+  node_link_tbl  -> node_tbl [label="parent_id / child_id"];
+  bridge_tbl     -> node_tbl [label="customer / internal"];
+  dep_tbl        -> node_tbl [label="from / to"];
+  visit_tbl      -> node_tbl [label="node_id (1:1)"];
+  exam_tbl       -> node_tbl [label="node_id (1:1)"];
+  laborder_tbl   -> node_tbl [label="node_id (1:1)"];
+  labresult_tbl  -> node_tbl [label="node_id (1:1)"];
+  diag_tbl       -> exam_tbl [label="exam_node_id"];
+  labline_tbl    -> labresult_tbl [label="result_node_id"];
+}

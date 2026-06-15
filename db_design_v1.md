@@ -553,6 +553,17 @@ flowchart TD
     style CK4 fill:#d4edda,stroke:#28a745
 ```
 
+### ⊕ Sơ đồ 6 — Dữ liệu nằm ở bảng nào (kiểu ER có data)
+
+Sơ đồ 5 cho thấy *luồng*; sơ đồ này cho thấy **mỗi dòng dữ liệu của happy case rơi vào bảng nào** — mỗi hộp là một bảng đã đổ data thật, mũi tên là khóa ngoại (FK).
+
+![Happy case — dữ liệu ở bảng nào](diagrams/06_happy_data.png)
+
+> Bản nét cao (zoom thoải mái): [diagrams/06_happy_data.svg](diagrams/06_happy_data.svg). Sửa data thì sửa [diagrams/06_happy_data.dot](diagrams/06_happy_data.dot) rồi render lại:
+> `node diagrams/.build/render.mjs diagrams/06_happy_data.dot diagrams/06_happy_data.svg diagrams/06_happy_data.png`
+
+Đọc sơ đồ: bảng **node** (phải) là hub — 13 dòng, xanh = `CUSTOMER` (khách thấy), tím = `INTERNAL` (giấu). Mọi bảng khác trỏ FK về nó. Chú ý bảng **task_bridge**: 2 dòng vàng `CK2→IN2` và `CK2→IN3` chính là **1 task khách = 2 task nội bộ (1:N)**. Bảng **lab_result_line** có 3 dòng (WBC/RBC/HGB) — mỗi chỉ số 1 dòng, đúng 1NF.
+
 > **3 điều mục này chứng minh:**
 > 1. **Che giấu:** khách chỉ thấy 5 dòng `CK*` mờ; toàn bộ `IN*`, room session, subtask, KQ chi tiết bị giấu (`visibility` + RLS).
 > 2. **Bridge 1:N:** "Xét nghiệm máu" = CK2 → (IN2 + IN3). Đúng case (a) đang chờ anh D chốt — và vì cầu là bảng nối nên 1:N chạy được ngay.
