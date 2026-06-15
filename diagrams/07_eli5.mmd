@@ -1,0 +1,27 @@
+flowchart TB
+    subgraph KHACH["THẾ GIỚI KHÁCH — chỉ thấy thẻ mỏng"]
+        LK["Lượt khám BN B"]
+        K_KHAM["Khám TMH"]
+        K_XN["Xét nghiệm máu"]
+        LK -->|"dây NẰM TRONG"| K_KHAM
+        LK --> K_XN
+    end
+    subgraph NOIBO["THẾ GIỚI NỘI BỘ — thẻ chi tiết, giấu khách"]
+        I_KHAM["Khám TMH (BS Minh)"]
+        I_LAY["Lấy mẫu"]
+        I_CHAY["Chạy máy"]
+        I_DUYET["Duyệt KQ"]
+        I_LAY ==>|"dây TRƯỚC–SAU"| I_CHAY
+        I_CHAY ==> I_DUYET
+    end
+    K_KHAM -. "dây 2 MẶT (bridge)" .-> I_KHAM
+    K_XN -. bridge .-> I_LAY
+    K_XN -. bridge .-> I_DUYET
+
+    style LK fill:#d4edda,stroke:#28a745
+    style K_KHAM fill:#d4edda,stroke:#28a745
+    style K_XN fill:#d4edda,stroke:#28a745
+    style I_KHAM fill:#e7e0f3,stroke:#7a4eab
+    style I_LAY fill:#e7e0f3,stroke:#7a4eab
+    style I_CHAY fill:#e7e0f3,stroke:#7a4eab
+    style I_DUYET fill:#e7e0f3,stroke:#7a4eab

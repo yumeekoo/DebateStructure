@@ -132,6 +132,8 @@ erDiagram
 ```
 
 > Đọc nhanh: `node` ở trung tâm. Mọi bảng `node_*` **mở rộng 1-1** từ nó (CTI). `node_link` & `node_dependency` đều nối `node` về chính `node` (đồ thị tự tham chiếu). Domain (patient/room/service/staff) trỏ vào bảng extension, **không** trỏ thẳng vào `node`.
+>
+> 👉 Biểu đồ này lược cột cho gọn. **Bản ER ĐẦY ĐỦ mọi cột của cả 21 bảng + danh mục chức năng từng bảng: xem [Mục 11](#11-er-toàn-cảnh--danh-mục-bảng-chức-năng-từng-bảng).**
 
 ### ⊕ Biểu đồ 2 — Khái niệm: 4 bảng lõi tạo thành đồ thị + facade
 
@@ -234,11 +236,12 @@ CREATE TABLE room (                         -- Phòng (thuộc khoa; tạo bằn
 );
 
 CREATE TABLE staff (                        -- Nhân viên (bác sĩ, KTV, điều dưỡng, lễ tân...)
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  branch_id   uuid NOT NULL REFERENCES branch(id),
-  full_name   text NOT NULL,
-  role        text NOT NULL,                -- DOCTOR|NURSE|LAB_TECH|IMAGING_TECH|RECEPTIONIST|CASHIER|ADMIN
-  is_active   boolean NOT NULL DEFAULT true
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  branch_id     uuid NOT NULL REFERENCES branch(id),
+  department_id uuid REFERENCES department(id),  -- khoa của nhân viên → dùng cho RLS lọc task theo khoa (xem mục 8B)
+  full_name     text NOT NULL,
+  role          text NOT NULL,              -- DOCTOR|NURSE|LAB_TECH|IMAGING_TECH|RECEPTIONIST|CASHIER|ADMIN
+  is_active     boolean NOT NULL DEFAULT true
 );
 
 CREATE TABLE patient (                      -- Bệnh nhân — MPI TOÀN CỤC (không gắn branch_id)
@@ -294,7 +297,7 @@ CREATE TABLE node_link (                    -- CẠNH CHA→CON (M:N) — xây c
   id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id      uuid NOT NULL REFERENCES node(id) ON DELETE CASCADE,
   child_id       uuid NOT NULL REFERENCES node(id) ON DELETE CASCADE,
-  link_role      text NOT NULL,             -- vai trò gom: VISIT_ITEM | RESOURCE (dưới phiên-phòng) | COURSE (dưới liệu trình) | SUBTASK
+  link_role      text NOT NULL,             -- TRỤC gom (xem mục 8B): VISIT_ITEM (khách) | CLINICAL (lâm sàng, dưới visit) | RESOURCE (dưới phiên-phòng) | COURSE | SUBTASK
   order_index    int  NOT NULL DEFAULT 0,   -- ★ THỨ TỰ NẰM TRÊN CẠNH (mỗi cha có thứ tự riêng)
   context_status text,                      -- NULL = kế thừa node.status; ghi đè khi hai cha NỘI BỘ cần trạng thái khác nhau
   created_at     timestamptz NOT NULL DEFAULT now(),
@@ -562,7 +565,40 @@ Sơ đồ 5 cho thấy *luồng*; sơ đồ này cho thấy **mỗi dòng dữ l
 > Bản nét cao (zoom thoải mái): [diagrams/06_happy_data.svg](diagrams/06_happy_data.svg). Sửa data thì sửa [diagrams/06_happy_data.dot](diagrams/06_happy_data.dot) rồi render lại:
 > `node diagrams/.build/render.mjs diagrams/06_happy_data.dot diagrams/06_happy_data.svg diagrams/06_happy_data.png`
 
-Đọc sơ đồ: bảng **node** (phải) là hub — 13 dòng, xanh = `CUSTOMER` (khách thấy), tím = `INTERNAL` (giấu). Mọi bảng khác trỏ FK về nó. Chú ý bảng **task_bridge**: 2 dòng vàng `CK2→IN2` và `CK2→IN3` chính là **1 task khách = 2 task nội bộ (1:N)**. Bảng **lab_result_line** có 3 dòng (WBC/RBC/HGB) — mỗi chỉ số 1 dòng, đúng 1NF.
+**Đọc sơ đồ — 4 chỗ đáng nhìn:**
+
+- **`node`** (phải) = hub. Xanh = `CUSTOMER` (khách thấy), tím = `INTERNAL` (giấu). Mọi bảng khác trỏ FK về nó.
+- **`node_link`** (trên) chia **3 TRỤC theo màu** — đây là chìa khóa của "phân task theo khoa + xem kết quả chéo phòng" (mục 8B):
+  - 🟩 `VISIT_ITEM` (xanh lá): `V1 → CK*` — app bệnh nhân (thẻ mỏng).
+  - 🟦 `CLINICAL` (xanh dương): `V1 → IN1/IN3/IN4/IN5` — **hồ sơ BN cho bác sĩ, gom mọi phòng**.
+  - 🟪 `RESOURCE` (tím): `phiên-phòng → IN*` — hàng đợi từng phòng.
+  - → Nhìn kỹ: **`IN3` (kết quả XN) xuất hiện ở 2 dòng** — 1 dòng xanh dương (`V1→IN3 CLINICAL`, để BS nội đọc trong hồ sơ BN) + 1 dòng tím (`RS_LAB→IN3 RESOURCE`, để KTV lab làm). Đây là **một task treo trên hai dây** — bằng chứng data cho "hai trục".
+- **`task_bridge`**: 2 dòng vàng `CK2→IN2` và `CK2→IN3` = **1 task khách / 2 task nội bộ (1:N)**.
+- **`lab_result_line`**: 3 dòng WBC/RBC/HGB — mỗi chỉ số 1 dòng (1NF).
+
+> **Vì sao BS nội thấy kết quả lab dù lab ở phòng khác?** Vì có dòng xanh dương `V1→IN3 CLINICAL`: kết quả treo về cùng lượt khám. Màn hình "hồ sơ BN" đi theo trục `CLINICAL` → gom được `IN3` dù nó do phòng Lab thực hiện. Còn màn hình "hàng đợi phòng nội" đi theo trục `RESOURCE` của phòng nội → không đụng `IN3`. Chi tiết + query: mục 8B.
+
+### Luồng data: mỗi chuyên khoa thấy phần của mình thế nào?
+
+"Đóng dấu thuộc phòng/khoa nào" cho mỗi task nằm ở **dòng `RESOURCE`** của `node_link` (task treo dưới phiên-phòng nào → thuộc phòng đó → `room → department` cho biết khoa). Đọc thẳng các dòng RESOURCE (màu tím) trong Sơ đồ 6:
+
+- `RS_ENT → IN1, IN4, IN5` → thuộc **phòng khám nội**
+- `RS_DRAW → IN2` → thuộc **phòng lấy máu**
+- `RS_LAB → IN3` → thuộc **phòng xét nghiệm**
+
+Mỗi màn hình chỉ lọc theo phiên-phòng (hoặc lượt khám) của mình → mỗi khoa nhận đúng phần data của khoa đó:
+
+| Màn hình | Lọc dòng `node_link` nào | THẤY | KHÔNG thấy |
+|---|---|---|---|
+| Hàng đợi **phòng nội** | `RESOURCE`, parent = RS_ENT | IN1, IN4, IN5 | IN2, **IN3** |
+| Hàng đợi **phòng XN** | `RESOURCE`, parent = RS_LAB | **IN3** | IN1, IN4, IN5 |
+| **Hồ sơ BN** (BS nội mở lại) | `CLINICAL`, parent = V1 | IN1, **IN3**, IN4, IN5 | (chỉ ẩn thẻ khách CK*) |
+
+**Mấu chốt — `IN3` đi 2 đường:** dòng `RESOURCE` đẩy nó vào hàng đợi **phòng XN** (để KTV làm); dòng `CLINICAL` đẩy nó vào **hồ sơ BN** (để BS nội đọc). Nên BS nội **không** thấy IN3 trong hàng đợi phòng mình, **nhưng** thấy IN3 khi mở hồ sơ BN. Một task, hai dây, hai màn hình:
+
+![Một task, hai đường, hai màn hình](diagrams/09_dept_routing.png)
+
+**Tổng quát cho N chuyên khoa:** mỗi khoa = một tập phiên-phòng. Màn hình phòng của khoa chỉ lọc phiên-phòng thuộc khoa đó (`room.department_id`). Thêm khoa Sản, Nhi, Da liễu... chỉ là thêm phiên-phòng mới — mỗi khoa **tự động** chỉ thấy task của mình, không cần code riêng cho từng khoa. Các khoa **không** thấy task của nhau trên "hàng đợi phòng"; chỉ gặp nhau ở "hồ sơ bệnh nhân" (trục `CLINICAL`) — đúng như mong muốn. Muốn cấm cả *quyền đọc* chéo khoa → RLS theo `staff.department_id` (mục 8B).
 
 > **3 điều mục này chứng minh:**
 > 1. **Che giấu:** khách chỉ thấy 5 dòng `CK*` mờ; toàn bộ `IN*`, room session, subtask, KQ chi tiết bị giấu (`visibility` + RLS).
@@ -675,6 +711,74 @@ WHERE ck.id = :customer_task_id;
 
 ---
 
+## 8B. Định tuyến task theo khoa/phòng & xem kết quả chéo phòng
+
+> Trả lời 3 câu thực tế: (1) task của mỗi khoa phân biệt thế nào, (2) sao BS nội chỉ thấy task phòng nội, (3) sao BS nội vẫn thấy kết quả lab dù lab ở phòng khác.
+
+### Ý cốt: một task treo trên NHIỀU dây cha, mỗi `link_role` = một "trục"
+
+Một task nội bộ không chỉ có 1 cha. Nó treo đồng thời trên nhiều dây `node_link`, mỗi dây mang một `link_role` khác nhau — và **mỗi màn hình đi theo một trục khác nhau**:
+
+| `link_role` | Cha là | Phục vụ màn hình | Ai xem |
+|---|---|---|---|
+| `VISIT_ITEM` | visit | App bệnh nhân (thẻ mỏng) | Khách |
+| `CLINICAL` | visit | **Hồ sơ / lượt khám của BN** (mọi phòng) | Bác sĩ |
+| `RESOURCE` | room_session | **Hàng đợi phòng** (1 phòng) | KTV/BS phòng đó |
+| `COURSE` / `SUBTASK` | task khác | Lồng tầng bên trong nội bộ | Nội bộ |
+
+→ Cùng một task "kết quả XN" treo trên **cả** `RESOURCE` (dưới phiên-phòng-Lab, để lab làm) **lẫn** `CLINICAL` (dưới visit của BN, để BS đọc). Một task, hai trục, hai màn hình.
+
+### (1) Task thuộc khoa nào?
+Suy ra từ dây `RESOURCE`: `task → room_session → room → department`. Không lưu thừa `department_id` trên task — derive khi cần (hoặc denormalize nếu query nóng).
+
+### (2) BS nội chỉ thấy task phòng nội — query hàng đợi phòng
+```sql
+-- :room_session_id = phiên làm việc của PHÒNG NỘI hôm nay
+SELECT n.*, l.order_index
+FROM node n
+JOIN node_link l ON l.child_id = n.id AND l.link_role = 'RESOURCE'
+WHERE l.parent_id = :room_session_id
+ORDER BY l.order_index;
+```
+Task xét nghiệm treo dưới phiên-phòng-**Lab** → không khớp `:room_session_id` của phòng nội → **không xuất hiện**. Lọc theo cấu trúc, không cần lọc tay.
+
+### (3) BS nội thấy kết quả lab — query hồ sơ bệnh nhân
+```sql
+-- :visit_id = lượt khám của BN. Đi theo trục CLINICAL, đệ quy mọi tầng.
+WITH RECURSIVE clinical AS (
+  SELECT n.*, l.order_index, 1 AS depth
+  FROM node n
+  JOIN node_link l ON l.child_id = n.id AND l.link_role = 'CLINICAL'
+  WHERE l.parent_id = :visit_id
+  UNION ALL
+  SELECT n.*, l.order_index, c.depth + 1
+  FROM clinical c
+  JOIN node_link l ON l.parent_id = c.id
+  JOIN node n ON n.id = l.child_id
+)
+SELECT * FROM clinical WHERE node_type IN ('LAB_RESULT','EXAM','PRESCRIPTION', ...) ORDER BY depth, order_index;
+-- → ra cả kết quả lab (do phòng Lab làm) vì nó treo CLINICAL dưới cùng visit.
+```
+BS nội thấy kết quả **không phải** qua hàng đợi phòng (task lab đâu có ở đó) mà qua **hồ sơ BN** — màn hình đi theo trục `CLINICAL`, gom mọi phòng về một lượt khám.
+
+### Khóa quyền cứng (tùy chọn): RLS theo khoa
+Lọc theo query (mục 2 trên) là đủ để *ẩn* trên UI. Muốn cấm *quyền đọc*:
+```sql
+-- nhân viên chỉ đọc task mà phòng thực hiện thuộc khoa mình
+-- (dùng staff.department_id ↔ room.department_id qua room_session)
+CREATE POLICY task_by_dept ON node FOR SELECT USING ( ... khoa của task = khoa của current_staff ... );
+```
+> Lưu ý: hồ sơ BN (trục CLINICAL) cần policy nới hơn — BS điều trị được đọc kết quả mọi phòng của BN mình phụ trách. Tách 2 chế độ: *"việc phòng tôi"* (khóa theo khoa) vs *"hồ sơ BN tôi"* (theo BN, không khóa khoa).
+
+### Bổ sung cho happy case (Mục 6)
+Để hồ sơ BN chạy đúng, thêm các dây `CLINICAL` từ visit tới các mốc lâm sàng (ngoài dây `RESOURCE` đã có):
+`node_link(V1→IN1, CLINICAL)` · `node_link(V1→IN3, CLINICAL)` · `node_link(V1→IN4, CLINICAL)` · `node_link(V1→IN5, CLINICAL)`.
+→ Nhờ vậy mở visit V1 là thấy khám + **kết quả lab** + đơn + hẹn, dù IN3 do phòng Lab làm.
+
+**Chốt:** *"Việc của phòng tôi"* đi theo trục `RESOURCE` (chỉ phòng mình). *"Hồ sơ bệnh nhân"* đi theo trục `CLINICAL` (mọi phòng). Một task nằm trên cả hai trục → vừa vào hàng đợi phòng lab, vừa hiện trong hồ sơ cho BS nội. Đây là **"hai trục"** từ buổi debate đầu, nay thành `link_role`.
+
+---
+
 ## 9. Tổng kết bảng
 
 | # | Bảng | Nhóm | Vai trò 1 dòng |
@@ -712,4 +816,75 @@ WHERE ck.id = :customer_task_id;
 - [ ] **Khóa đồng thời (case B6):** dùng optimistic (`updated_at` version) hay pessimistic (như EzMon "Hủy hoàn tất")? Ảnh hưởng cột trên `node`.
 - [ ] **RLS theo `branch_id`** trên `node`: viết policy Supabase cụ thể.
 - [ ] Mở rộng cho module chưa chạm: thanh toán, thuốc, kho (đều map được vào node nhưng cần extension riêng).
+
+---
+
+## 11. ER TOÀN CẢNH + danh mục bảng (chức năng từng bảng)
+
+> Một chỗ để nhìn hết: **bao nhiêu bảng · cột gì · quan hệ ra sao · mỗi bảng làm gì.**
+
+### Đếm nhanh: **21 bảng dùng ngay** + 2 bảng pha sau, chia 4 nhóm
+
+| Nhóm | Số bảng | Là gì |
+|---|---|---|
+| **A · Master / Domain** | 6 | Dữ liệu nền: ai, ở đâu, dịch vụ gì |
+| **B · Work-Graph Core** | 5 | Trái tim: node + 3 loại cạnh + cấu hình loại |
+| **C · Extension (CTI)** | 7 | Thuộc tính riêng theo loại node |
+| **D · Child (nhiều dòng)** | 3 | Bảng con 1NF (ICD, dòng KQ, sinh hiệu) |
+| **Pha sau** | (2) | `node_prescription`, `node_followup` — chưa định cột |
+| **TỔNG** | **21 (+2)** | |
+
+### Sơ đồ ER đầy đủ mọi cột
+
+![ER toàn cảnh](diagrams/08_er_full.png)
+
+> Bản nét cao zoom thoải mái: [diagrams/08_er_full.svg](diagrams/08_er_full.svg) · nguồn [diagrams/08_er_full.dot](diagrams/08_er_full.dot).
+> Ký hiệu quan hệ: đầu **chân quạ** = phía "nhiều", đầu **gạch ngang** = phía "một". Nét đứt = bảng pha sau. Cột thứ 3 trong mỗi bảng: `PK` khóa chính · `FK` khóa ngoại · `UQ` duy nhất.
+
+### Danh mục chức năng từng bảng
+
+**A · MASTER / DOMAIN** — dữ liệu nền, ít thay đổi
+| Bảng | Chức năng (1 dòng) | Quan hệ chính |
+|---|---|---|
+| `branch` | Một chi nhánh/cơ sở. Gốc cô lập đa chi nhánh | ← department, staff, node |
+| `department` | Một khoa (đơn vị tổ chức, chứa nhiều phòng) | → branch · ← room, staff |
+| `room` | Một phòng (thuộc khoa); tạo bằng tool | → department · ← node_room_session, node_lab_order |
+| `staff` | Một nhân viên (BS/KTV/điều dưỡng/lễ tân) | → branch, department |
+| `patient` | Một bệnh nhân — **MPI toàn cục** (không gắn branch) | ← node_visit |
+| `service` | Danh mục dịch vụ, **cây phân cấp** Nhóm→DV | → service (self) · ← node_exam, node_lab_order, node_tx_course |
+
+**B · WORK-GRAPH CORE** — trái tim
+| Bảng | Chức năng (1 dòng) | Quan hệ chính |
+|---|---|---|
+| `node_type` | Cấu hình các loại node (VISIT/EXAM/...) | ← node |
+| `node` | **MỌI đơn vị việc** (worklist=task=subtask); cờ `visibility` | → node_type, branch, staff · ← gần như mọi bảng |
+| `node_link` | Cạnh **cha-con M:N** trong 1 worklist; mang `link_role` + `order` | → node (parent), node (child) |
+| `node_dependency` | Cạnh **"việc trước–sau"** (giữ DAG) | → node (from), node (to) |
+| `task_bridge` | **Cầu facade** khách↔nội bộ (1:1 hoặc 1:N) | → node (customer), node (internal) |
+
+**C · EXTENSION (CTI)** — `node_id` vừa PK vừa FK (1-1 với node)
+| Bảng | Chức năng (1 dòng) | Quan hệ chính |
+|---|---|---|
+| `node_visit` | Phần riêng của **lượt khám** (BN, giờ tiếp nhận, đối tượng) | → node, patient, department |
+| `node_room_session` | Phần riêng của **phiên phòng** (phòng, người trực, ngày) | → node, room, staff |
+| `node_exam` | Phần riêng của **phiếu khám** (dịch vụ, lý do, bệnh sử, xử trí) | → node, service |
+| `node_lab_order` | Phần riêng của **chỉ định XN** (dịch vụ, phòng, mẫu) | → node, service, room |
+| `node_lab_result` | Phần riêng của **KQ XN** (người làm, người duyệt) | → node, staff×2 |
+| `node_tx_course` | Phần riêng của **liệu trình** (dịch vụ, số buổi, từ–đến) | → node, service |
+| `node_tx_session` | Phần riêng của **buổi điều trị** (số thứ tự buổi, người làm) | → node, staff |
+
+**D · CHILD (nhiều dòng — 1NF)**
+| Bảng | Chức năng (1 dòng) | Quan hệ chính |
+|---|---|---|
+| `diagnosis` | Một dòng **chẩn đoán ICD** của một phiếu khám | → node_exam |
+| `lab_result_line` | Một dòng **chỉ số KQ XN** (WBC, RBC...) | → node_lab_result |
+| `vital_measurement` | Một lần **đo sinh hiệu** (gắn node bất kỳ) | → node |
+
+**Pha sau (chưa định cột)**
+| Bảng | Chức năng | Quan hệ |
+|---|---|---|
+| `node_prescription` | Phần riêng đơn thuốc — module Thuốc | → node |
+| `node_followup` | Phần riêng hẹn tái khám | → node |
+
+> **Đọc cả bảng trong 1 câu:** 6 bảng nền (A) + 5 bảng đồ thị (B) gánh toàn bộ cấu trúc; 7 bảng C chỉ là "tờ đính kèm" cho từng loại việc; 3 bảng D là danh sách con. Thêm nghiệp vụ mới = thêm 1 `node_type` + (nếu cần) 1 bảng C. **Bốn bảng B không bao giờ phải sửa.**
 ```

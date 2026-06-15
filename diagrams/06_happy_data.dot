@@ -28,17 +28,22 @@ digraph happy_case {
 
   node_link_tbl [label=<
     <table border="0" cellborder="1" cellspacing="0" cellpadding="3">
-      <tr><td colspan="4" bgcolor="#1f6f3f"><font color="white"><b>node_link</b> (cha-con trong 1 worklist)</font></td></tr>
+      <tr><td colspan="4" bgcolor="#1f6f3f"><font color="white"><b>node_link</b> — 3 TRỤC</font></td></tr>
+      <tr><td colspan="4" bgcolor="#f0f0f0"><font point-size="9">xanh=KHÁCH · xanh dương=LÂM SÀNG (về visit) · tím=PHÒNG</font></td></tr>
       <tr><td bgcolor="#dddddd"><b>parent_id</b></td><td bgcolor="#dddddd"><b>child_id</b></td><td bgcolor="#dddddd"><b>link_role</b></td><td bgcolor="#dddddd"><b>order</b></td></tr>
-      <tr><td>V1</td><td>CK1</td><td>VISIT_ITEM</td><td>1</td></tr>
-      <tr><td>V1</td><td>CK2</td><td>VISIT_ITEM</td><td>2</td></tr>
-      <tr><td>V1</td><td>CK3</td><td>VISIT_ITEM</td><td>3</td></tr>
-      <tr><td>V1</td><td>CK4</td><td>VISIT_ITEM</td><td>4</td></tr>
-      <tr><td>RS_ENT</td><td>IN1</td><td>RESOURCE</td><td>3</td></tr>
-      <tr><td>RS_DRAW</td><td>IN2</td><td>RESOURCE</td><td>1</td></tr>
-      <tr><td>RS_LAB</td><td>IN3</td><td>RESOURCE</td><td>1</td></tr>
-      <tr><td>RS_ENT</td><td>IN4</td><td>RESOURCE</td><td>5</td></tr>
-      <tr><td>RS_ENT</td><td>IN5</td><td>RESOURCE</td><td>6</td></tr>
+      <tr><td bgcolor="#d4edda">V1</td><td bgcolor="#d4edda">CK1</td><td bgcolor="#d4edda">VISIT_ITEM</td><td bgcolor="#d4edda">1</td></tr>
+      <tr><td bgcolor="#d4edda">V1</td><td bgcolor="#d4edda">CK2</td><td bgcolor="#d4edda">VISIT_ITEM</td><td bgcolor="#d4edda">2</td></tr>
+      <tr><td bgcolor="#d4edda">V1</td><td bgcolor="#d4edda">CK3</td><td bgcolor="#d4edda">VISIT_ITEM</td><td bgcolor="#d4edda">3</td></tr>
+      <tr><td bgcolor="#d4edda">V1</td><td bgcolor="#d4edda">CK4</td><td bgcolor="#d4edda">VISIT_ITEM</td><td bgcolor="#d4edda">4</td></tr>
+      <tr><td bgcolor="#cfe2ff">V1</td><td bgcolor="#cfe2ff">IN1</td><td bgcolor="#cfe2ff">CLINICAL</td><td bgcolor="#cfe2ff">1</td></tr>
+      <tr><td bgcolor="#cfe2ff">V1</td><td bgcolor="#cfe2ff">IN3</td><td bgcolor="#cfe2ff">CLINICAL</td><td bgcolor="#cfe2ff">2</td></tr>
+      <tr><td bgcolor="#cfe2ff">V1</td><td bgcolor="#cfe2ff">IN4</td><td bgcolor="#cfe2ff">CLINICAL</td><td bgcolor="#cfe2ff">3</td></tr>
+      <tr><td bgcolor="#cfe2ff">V1</td><td bgcolor="#cfe2ff">IN5</td><td bgcolor="#cfe2ff">CLINICAL</td><td bgcolor="#cfe2ff">4</td></tr>
+      <tr><td bgcolor="#e7e0f3">RS_ENT</td><td bgcolor="#e7e0f3">IN1</td><td bgcolor="#e7e0f3">RESOURCE</td><td bgcolor="#e7e0f3">3</td></tr>
+      <tr><td bgcolor="#e7e0f3">RS_DRAW</td><td bgcolor="#e7e0f3">IN2</td><td bgcolor="#e7e0f3">RESOURCE</td><td bgcolor="#e7e0f3">1</td></tr>
+      <tr><td bgcolor="#e7e0f3">RS_LAB</td><td bgcolor="#e7e0f3">IN3</td><td bgcolor="#e7e0f3">RESOURCE</td><td bgcolor="#e7e0f3">1</td></tr>
+      <tr><td bgcolor="#e7e0f3">RS_ENT</td><td bgcolor="#e7e0f3">IN4</td><td bgcolor="#e7e0f3">RESOURCE</td><td bgcolor="#e7e0f3">5</td></tr>
+      <tr><td bgcolor="#e7e0f3">RS_ENT</td><td bgcolor="#e7e0f3">IN5</td><td bgcolor="#e7e0f3">RESOURCE</td><td bgcolor="#e7e0f3">6</td></tr>
     </table>
   >];
 

@@ -1,0 +1,15 @@
+flowchart TD
+    IN1["IN1 · Khám TMH<br/>(thuộc phòng nội)"]
+    IN3["IN3 · Kết quả xét nghiệm<br/>(thuộc phòng XN)"]
+    ST["Màn hình PHÒNG NỘI<br/>(hàng đợi — BS nội)"]
+    SL["Màn hình PHÒNG XÉT NGHIỆM<br/>(hàng đợi — KTV)"]
+    SR["HỒ SƠ BỆNH NHÂN<br/>(BS nội mở lại)"]
+
+    IN1 -->|"dây RESOURCE → phòng nội"| ST
+    IN3 -->|"dây RESOURCE → phòng XN"| SL
+    IN1 -->|"dây CLINICAL → lượt khám"| SR
+    IN3 -->|"dây CLINICAL → lượt khám"| SR
+
+    style ST fill:#e7e0f3,stroke:#7a4eab
+    style SL fill:#e7e0f3,stroke:#7a4eab
+    style SR fill:#cfe2ff,stroke:#2c5f8a
