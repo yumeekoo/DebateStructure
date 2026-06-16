@@ -1,0 +1,15 @@
+flowchart TD
+    V1["V1 · Lượt khám BN B<br/>(CUSTOMER)"]
+    CK1["CK1 · Khám TMH<br/>thẻ KHÁCH (mỏng)"]
+    IN1["IN1 · Khám TMH – BS Minh<br/>thẻ NỘI BỘ (chi tiết)"]
+    RS["RS_ENT · Phiên phòng TMH<br/>(INTERNAL)"]
+
+    V1 -->|"VISIT_ITEM → app khách"| CK1
+    V1 -->|"CLINICAL → hồ sơ BN"| IN1
+    RS -->|"RESOURCE → hàng đợi phòng"| IN1
+    CK1 -. "task_bridge" .- IN1
+
+    style V1 fill:#d4edda,stroke:#28a745
+    style CK1 fill:#d4edda,stroke:#28a745
+    style IN1 fill:#e7e0f3,stroke:#7a4eab
+    style RS fill:#e7e0f3,stroke:#7a4eab
